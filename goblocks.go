@@ -45,10 +45,12 @@ var (
 	volColor    = "#789fcc"
 	batColor    = "#88c0d0"
 	datColor    = "#b48ead"
+	duration    = 0
+	update      = false
 )
 
 func main() {
-	//parseConfig()
+	parseConfig()
 	for {
 		status := setStyle(style)
 		s := strings.Join(status, " ")
@@ -86,11 +88,23 @@ func setStyle(style string) []string {
 }
 
 func updatePacman() string {
-	_, err := exec.Command("checkupdates | wc -l").Output()
-	if err == nil {
+	if duration%300 == 0 {
+		getUpdates()
+	}
+	duration += 1
+	if update {
+		return ""
+	} else {
 		return iconPacman
 	}
-	return ""
+}
+
+func getUpdates() {
+	_, err := exec.Command("checkupdates | wc -l").Output()
+	if err == nil {
+		update = false
+	}
+	update = true
 }
 
 func getNetSpeed() (int, int) {
@@ -284,12 +298,6 @@ func parseConfig() {
 	lan = config.Get("networks.lan").(string) + ":"
 
 	style = config.Get("color.style").(string)
-	netColor = config.Get("color.netColor").(string)
-	cpuColor = config.Get("color.cpuColor").(string)
-	memColor = config.Get("color.memColor").(string)
-	volColor = config.Get("color.volColor").(string)
-	batColor = config.Get("color.batColor").(string)
-	datColor = config.Get("color.datColor").(string)
 
 	netDevMap[wlan] = struct{}{}
 	netDevMap[lan] = struct{}{}
