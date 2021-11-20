@@ -70,8 +70,8 @@ func setStyle(style string) []string {
 	}
 
 	return []string{
-		briefStyle + pacColor + "^",
-		updatePacman(),
+		//briefStyle + pacColor + "^",
+		//updatePacman(),
 		briefStyle + netColor + "^",
 		updateNet(),
 		briefStyle + cpuColor + "^",
@@ -87,25 +87,27 @@ func setStyle(style string) []string {
 	}
 }
 
-func updatePacman() string {
-	if duration%300 == 0 {
-		getUpdates()
-	}
-	duration += 1
-	if update {
-		return ""
-	} else {
-		return iconPacman
-	}
-}
-
-func getUpdates() {
-	_, err := exec.Command("checkupdates | wc -l").Output()
-	if err == nil {
-		update = false
-	}
-	update = true
-}
+//func updatePacman() string {
+//	//if duration == 0 || duration%300 == 0 {
+//	getUpdates()
+//	//}
+//	duration += 1
+//	if update {
+//		return iconPacman
+//	} else {
+//		return ""
+//	}
+//}
+//
+//func getUpdates() {
+//	updates, _ := exec.Command("checkupdates | wc -l").Output()
+//	print(update)
+//	if string(updates) == "0" {
+//		update = false
+//	} else {
+//		update = true
+//	}
+//}
 
 func getNetSpeed() (int, int) {
 	dev, err := os.Open("/proc/net/dev")
