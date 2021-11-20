@@ -179,7 +179,7 @@ func updateMem() string {
 	}
 	used := (total - avail) / 1024.0 / 1024.0
 
-	return iconRAM + fmt.Sprintf("%.2f", used) + "GiB"
+	return iconRAM + " " + fmt.Sprintf("%.2f", used) + "GiB"
 }
 
 func updateCPU() string {
@@ -190,7 +190,7 @@ func updateCPU() string {
 	defer func() { cpuOld = cpuNow }()
 	total := float64(cpuNow.Total - cpuOld.Total)
 	usage := 100.0 - float64(cpuNow.Idle-cpuOld.Idle)/total*100
-	return iconCPU + fmt.Sprintf("%.2f", usage) + "%"
+	return iconCPU + " " + fmt.Sprintf("%.2f", usage) + "%"
 }
 
 func updateVolume() string {
@@ -200,7 +200,7 @@ func updateVolume() string {
 	if isMuted {
 		return iconVolArr[0]
 	} else {
-		return getVolIcon(volume) + volume
+		return getVolIcon(volume) + " " + volume
 	}
 }
 
@@ -243,12 +243,12 @@ func updateBattery() string {
 	capacity := parseTxt(pathToBat0, "capacity")
 	isPlugged, _ := strconv.ParseBool(parseTxt(pathToAC, "online"))
 	if status == "Full" {
-		return iconBatArr[5] + "Full"
+		return iconBatArr[5] + " Full"
 	} else {
 		if isPlugged == true {
-			return iconPlug + capacity
+			return iconPlug + " " + capacity
 		} else {
-			return getBatIcon(capacity) + capacity
+			return getBatIcon(capacity) + " " + capacity
 		}
 	}
 }
