@@ -19,33 +19,36 @@ import (
 )
 
 const (
-	iconCPU  = " "
-	iconRAM  = " "
-	iconUp   = " "
-	iconDown = " "
+	iconCPU    = "\U000F0EE0"
+	iconRAM    = "\U000F035B"
+	iconUp     = "\U000F0552"
+	iconDown   = "\U000F01DA"
+	iconPlug   = "\U000F06A5"
+	iconPacman = "\U000F0BAF"
 )
 
 var (
-	iconTimeArr = [12]string{" ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " "}
-	iconBatArr  = [5]string{" ", " ", " ", " ", " "}
-	iconVolArr  = [4]string{"", "", "墳", " "}
+	iconTimeArr = [12]string{"\U000F143F", "\U000F1440", "\U000F1441", "\U000F1442", "\U000F1443", "\U000F1444", "\U000F1455", "\U000F1446", "\U000F1447", "\U000F1448", "\U000F1449", "\U000F144A"}
+	iconBatArr  = [6]string{"\U000F008E", "\U000F007B", "\U000F007D", "\U000F007F", "\U000F0081", "\U000F0079"}
+	iconVolArr  = [4]string{"\U000F075F", "\U000F057F", "\U000F0580", "\U000F057E"}
 	netDevMap   = map[string]struct{}{}
 	cpuOld, _   = cpu.Get()
 	rxOld       = 0
 	txOld       = 0
 	wlan        = "wlan0"
 	lan         = "enp2s0"
-	style       = "background"
+	style       = "foreground"
+	pacColor    = "#7ec7a2"
 	netColor    = "#d08070"
 	cpuColor    = "#ebcb8b"
 	memColor    = "#a3be8c"
-	volColor    = "#5e81ac"
+	volColor    = "#789fcc"
 	batColor    = "#88c0d0"
 	datColor    = "#b48ead"
 )
 
 func main() {
-	parseConfig()
+	//parseConfig()
 	for {
 		status := setStyle(style)
 		s := strings.Join(status, " ")
@@ -65,6 +68,8 @@ func setStyle(style string) []string {
 	}
 
 	return []string{
+		briefStyle + pacColor + "^",
+		updatePacman(),
 		briefStyle + netColor + "^",
 		updateNet(),
 		briefStyle + cpuColor + "^",
@@ -78,6 +83,14 @@ func setStyle(style string) []string {
 		briefStyle + datColor + "^",
 		updateDateTime(),
 	}
+}
+
+func updatePacman() string {
+	_, err := exec.Command("checkupdates | wc -l").Output()
+	if err == nil {
+		return iconPacman
+	}
+	return ""
 }
 
 func getNetSpeed() (int, int) {
@@ -114,13 +127,13 @@ func fmtNetSpeed(speed float64) string {
 	switch {
 	case speed >= (1024 * 1024 * 1024):
 		gbSpeed := speed / (1024.0 * 1024.0 * 1024.0)
-		res = fmt.Sprintf("%.2f", gbSpeed) + "Gb"
+		res = fmt.Sprintf("%.1f", gbSpeed) + "GB"
 	case speed >= (1024 * 1024):
 		mbSpeed := speed / (1024.0 * 1024.0)
-		res = fmt.Sprintf("%.1f", mbSpeed) + "Mb"
+		res = fmt.Sprintf("%.1f", mbSpeed) + "MB"
 	case speed >= 1024:
 		kbSpeed := speed / 1024.0
-		res = fmt.Sprintf("%.1f", kbSpeed) + "kb"
+		res = fmt.Sprintf("%.1f", kbSpeed) + "KB"
 	case speed >= 0:
 		res = fmt.Sprint(speed) + "B"
 	}
@@ -171,7 +184,7 @@ func updateVolume() string {
 	if isMuted {
 		return iconVolArr[0]
 	} else {
-		return getVolIcon(volume) + " " + volume
+		return getVolIcon(volume) + volume
 	}
 }
 
@@ -208,18 +221,18 @@ func cmdReturn(bin string, arg string) string {
 func updateBattery() string {
 	const pathToPowerSupply = "/sys/class/power_supply/"
 	var pathToBat0 = pathToPowerSupply + "BAT0/"
-	var pathToAC = pathToPowerSupply + "AC/"
+	var pathToAC = pathToPowerSupply + "AC0/"
 
 	status := parseTxt(pathToBat0, "status")
 	capacity := parseTxt(pathToBat0, "capacity")
 	isPlugged, _ := strconv.ParseBool(parseTxt(pathToAC, "online"))
 	if status == "Full" {
-		return iconBatArr[4] + " Full"
+		return iconBatArr[5] + "Full"
 	} else {
 		if isPlugged == true {
-			return getBatIcon(capacity) + "  " + capacity
+			return iconPlug + capacity
 		} else {
-			return getBatIcon(capacity) + " " + capacity
+			return getBatIcon(capacity) + capacity
 		}
 	}
 }
@@ -227,11 +240,15 @@ func updateBattery() string {
 func getBatIcon(capacity string) string {
 	var res string
 	capacityInt, _ := strconv.ParseInt(capacity, 10, 32)
-	if capacityInt >= 75 {
+	if capacityInt == 100 {
+		res = iconBatArr[5]
+	} else if capacityInt >= 80 {
+		res = iconBatArr[4]
+	} else if capacityInt > 60 {
 		res = iconBatArr[3]
-	} else if capacityInt > 50 {
+	} else if capacityInt > 40 {
 		res = iconBatArr[2]
-	} else if capacityInt > 25 {
+	} else if capacityInt > 20 {
 		res = iconBatArr[1]
 	} else {
 		res = iconBatArr[0]
@@ -282,7 +299,7 @@ func updateDateTime() string {
 	var hour = time.Now().Hour()
 	var dateTime = time.Now().Local().Format("2006-01-02 Mon 15:04:05")
 
-	return getHourIcon(hour) + dateTime
+	return getHourIcon(hour) + " " + dateTime
 }
 
 func getHourIcon(hour int) string {
