@@ -170,11 +170,11 @@ func updateMem() string {
 		if _, err = fmt.Sscanf(info.Text(), "%s %f", &key, &value); err != nil {
 			log.Fatalln(err)
 		}
-		if key == "MemTotal:" {
-			total = value
+		if key == "MemTotal:" || key == "SwapTotal:" {
+			total += value
 		}
-		if key == "MemAvailable:" {
-			avail = value
+		if key == "MemAvailable:" || key == "SwapFree:" {
+			avail += value
 		}
 	}
 	used := (total - avail) / 1024.0 / 1024.0
