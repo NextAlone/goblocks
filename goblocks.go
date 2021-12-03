@@ -207,14 +207,12 @@ func updateVolume() string {
 func getVolIcon(volume string) string {
 	var res string
 	volumeInt, _ := strconv.ParseInt(volume, 10, 32)
-	if volumeInt > 80 {
+	if volumeInt > 70 {
 		res = iconVolArr[3]
-	} else if volumeInt > 50 {
+	} else if volumeInt > 40 {
 		res = iconVolArr[2]
-	} else if volumeInt > 20 {
-		res = iconVolArr[1]
 	} else {
-		res = iconVolArr[0]
+		res = iconVolArr[1]
 	}
 	return res
 }
