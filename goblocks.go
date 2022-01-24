@@ -19,12 +19,13 @@ import (
 )
 
 const (
-	iconCPU    = "\U000F0EE0"
-	iconRAM    = "\U000F035B"
-	iconUp     = "\U000F0552"
-	iconDown   = "\U000F01DA"
-	iconPlug   = "\U000F06A5"
-	iconPacman = "\U000F0BAF"
+	iconCPU        = "\U000F0EE0"
+	iconRAM        = "\U000F035B"
+	iconUp         = "\U000F0552"
+	iconDown       = "\U000F01DA"
+	iconPlug       = "\U000F06A5"
+	iconPacman     = "\U000F0BAF"
+	iconBrightness = "\U000F00E0"
 )
 
 var (
@@ -38,10 +39,10 @@ var (
 	wlan        = "wlan0"
 	lan         = "enp2s0"
 	style       = "foreground"
-	pacColor    = "#7ec7a2"
 	netColor    = "#d08070"
 	cpuColor    = "#ebcb8b"
 	memColor    = "#a3be8c"
+	briColor    = "#7ec7a2"
 	volColor    = "#789fcc"
 	batColor    = "#88c0d0"
 	datColor    = "#b48ead"
@@ -78,6 +79,8 @@ func setStyle(style string) []string {
 		updateCPU(),
 		briefStyle + memColor + "^",
 		updateMem(),
+		briefStyle + briColor + "^",
+		updateBrightness(),
 		briefStyle + volColor + "^",
 		updateVolume(),
 		briefStyle + batColor + "^",
@@ -195,13 +198,21 @@ func updateCPU() string {
 
 func updateVolume() string {
 	const pamixer = "pamixer"
-	isMuted, _ := strconv.ParseBool(cmdReturn(pamixer, "--get-mute"))
-	volume := cmdReturn(pamixer, "--get-volume")
+	isMuted, _ := strconv.ParseBool(cmdReturn(pamixer, "--get-mute", false))
+	volume := cmdReturn(pamixer, "--get-volume", true)
 	if isMuted {
 		return iconVolArr[0]
 	} else {
 		return getVolIcon(volume) + " " + volume
 	}
+}
+
+func updateBrightness() string {
+	const brightnessctl = "brightnessctl"
+	brightness := cmdReturn(brightnessctl, "get", true)
+	bright, _ := strconv.ParseInt(brightness, 10, 64)
+	return iconBrightness + " " + strconv.FormatInt(bright/1200, 10)
+
 }
 
 func getVolIcon(volume string) string {
@@ -217,7 +228,7 @@ func getVolIcon(volume string) string {
 	return res
 }
 
-func cmdReturn(bin string, arg string) string {
+func cmdReturn(bin string, arg string, output bool) string {
 	var res string
 	cmd := exec.Command(bin, arg)
 	var stdout, stderr bytes.Buffer
@@ -225,7 +236,9 @@ func cmdReturn(bin string, arg string) string {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Println(err)
+		if output {
+			log.Println(err)
+		}
 	}
 	res = strings.TrimSpace(string(stdout.Bytes()))
 
