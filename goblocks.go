@@ -37,10 +37,10 @@ var (
 	rxOld       = 0
 	txOld       = 0
 	wlan        = "wlan0"
-	lan         = "enp2s0"
+	lan         = "enp4s0"
 	style       = "foreground"
 	netColor    = "#d08070"
-	cpuColor    = "#ebcb8b"
+	cpuColor    = "#fcb103"
 	memColor    = "#a3be8c"
 	briColor    = "#7ec7a2"
 	volColor    = "#789fcc"
@@ -48,6 +48,7 @@ var (
 	datColor    = "#b48ead"
 	duration    = 0
 	update      = false
+	briefStyle  = "^c"
 )
 
 func main() {
@@ -63,54 +64,10 @@ func main() {
 }
 
 func setStyle(style string) []string {
-	var briefStyle string
-	if style == "background" {
-		briefStyle = "^b"
-	} else {
-		briefStyle = "^c"
-	}
-
 	return []string{
-		//briefStyle + pacColor + "^",
-		//updatePacman(),
-		briefStyle + netColor + "^",
-		updateNet(),
-		briefStyle + cpuColor + "^",
-		updateCPU(),
-		briefStyle + memColor + "^",
-		updateMem(),
-		briefStyle + briColor + "^",
-		updateBrightness(),
-		briefStyle + volColor + "^",
-		updateVolume(),
-		briefStyle + batColor + "^",
-		updateBattery(),
-		briefStyle + datColor + "^",
-		updateDateTime(),
+		updateNet() + updateCPU() + updateMem() + updateBrightness() + updateVolume() + updateBattery() + updateDateTime(),
 	}
 }
-
-//func updatePacman() string {
-//	//if duration == 0 || duration%300 == 0 {
-//	getUpdates()
-//	//}
-//	duration += 1
-//	if update {
-//		return iconPacman
-//	} else {
-//		return ""
-//	}
-//}
-//
-//func getUpdates() {
-//	updates, _ := exec.Command("checkupdates | wc -l").Output()
-//	print(update)
-//	if string(updates) == "0" {
-//		update = false
-//	} else {
-//		update = true
-//	}
-//}
 
 func getNetSpeed() (int, int) {
 	dev, err := os.Open("/proc/net/dev")
@@ -122,10 +79,14 @@ func getNetSpeed() (int, int) {
 	devName, rx, tx, rxNow, txNow, void := "", 0, 0, 0, 0, 0
 	for scanner := bufio.NewScanner(dev); scanner.Scan(); {
 		_, err = fmt.Sscanf(scanner.Text(), "%s %d %d %d %d %d %d %d %d %d", &devName, &rx, &void, &void, &void, &void, &void, &void, &void, &tx)
-		if _, ok := netDevMap[devName]; ok {
+		if devName == wlan + ":" {
 			rxNow += rx
 			txNow += tx
+		} else if devName == lan + ":" {
+		    rxNow += rx
+		    txNow += tx
 		}
+
 	}
 	return rxNow, txNow
 }
@@ -133,7 +94,7 @@ func getNetSpeed() (int, int) {
 func updateNet() string {
 	rxNow, txNow := getNetSpeed()
 	defer func() { rxOld, txOld = rxNow, txNow }()
-	return iconDown + fmtNetSpeed(float64(rxNow-rxOld)) + " " + iconUp + fmtNetSpeed(float64(txNow-txOld))
+	return briefStyle + netColor + "^" + iconDown + fmtNetSpeed(float64(rxNow-rxOld)) + " " + iconUp + fmtNetSpeed(float64(txNow-txOld)) + " "
 
 }
 
@@ -182,7 +143,7 @@ func updateMem() string {
 	}
 	used := (total - avail) / 1024.0 / 1024.0
 
-	return iconRAM + " " + fmt.Sprintf("%.2f", used) + "GiB"
+	return briefStyle + memColor + "^" + iconRAM + " " + fmt.Sprintf("%.2f", used) + "GiB "
 }
 
 func updateCPU() string {
@@ -193,7 +154,7 @@ func updateCPU() string {
 	defer func() { cpuOld = cpuNow }()
 	total := float64(cpuNow.Total - cpuOld.Total)
 	usage := 100.0 - float64(cpuNow.Idle-cpuOld.Idle)/total*100
-	return iconCPU + " " + fmt.Sprintf("%.2f", usage) + "%"
+	return briefStyle + cpuColor + "^" + iconCPU + " " + fmt.Sprintf("%.2f", usage) + "% "
 }
 
 func updateVolume() string {
@@ -201,9 +162,9 @@ func updateVolume() string {
 	isMuted, _ := strconv.ParseBool(cmdReturn(pamixer, "--get-mute", false))
 	volume := cmdReturn(pamixer, "--get-volume", true)
 	if isMuted {
-		return iconVolArr[0]
+		return briefStyle + volColor + "^" + iconVolArr[0] + " "
 	} else {
-		return getVolIcon(volume) + " " + volume
+		return briefStyle + volColor + "^" + getVolIcon(volume) + " " + volume + " "
 	}
 }
 
@@ -211,16 +172,19 @@ func updateBrightness() string {
 	const brightnessctl = "brightnessctl"
 	brightness := cmdReturn(brightnessctl, "get", true)
 	bright, _ := strconv.ParseInt(brightness, 10, 64)
-	return iconBrightness + " " + strconv.FormatInt(bright/1200, 10)
-
+	if bright == 120000 {
+		return ""
+	} else {
+		return briefStyle + briColor + "^" + iconBrightness + " " + strconv.FormatInt(bright/1200, 10) + " "
+	}
 }
 
 func getVolIcon(volume string) string {
 	var res string
 	volumeInt, _ := strconv.ParseInt(volume, 10, 32)
-	if volumeInt > 70 {
+	if volumeInt > 65 {
 		res = iconVolArr[3]
-	} else if volumeInt > 40 {
+	} else if volumeInt > 30 {
 		res = iconVolArr[2]
 	} else {
 		res = iconVolArr[1]
@@ -254,13 +218,12 @@ func updateBattery() string {
 	capacity := parseTxt(pathToBat0, "capacity")
 	isPlugged, _ := strconv.ParseBool(parseTxt(pathToAC, "online"))
 	if status == "Full" {
-		return iconBatArr[5] + " Full"
+		// return iconBatArr[5] + " Full"
+		return ""
+	} else if isPlugged == true {
+		return briefStyle + batColor + "^" + iconPlug + " " + capacity + " "
 	} else {
-		if isPlugged == true {
-			return iconPlug + " " + capacity
-		} else {
-			return getBatIcon(capacity) + " " + capacity
-		}
+		return briefStyle + batColor + "^" + getBatIcon(capacity) + " " + capacity + " "
 	}
 }
 
@@ -307,8 +270,8 @@ func parseConfig() {
 	}
 
 	config, _ := toml.Load(string(content))
-	wlan = config.Get("networks.wlan").(string) + ":"
-	lan = config.Get("networks.lan").(string) + ":"
+	// wlan = config.Get("networks.wlan").(string) + ":"
+	// lan = config.Get("networks.lan").(string) + ":"
 
 	style = config.Get("color.style").(string)
 
@@ -320,7 +283,7 @@ func updateDateTime() string {
 	var hour = time.Now().Hour()
 	var dateTime = time.Now().Local().Format("2006-01-02 Mon 15:04:05 ")
 
-	return getHourIcon(hour) + " " + dateTime
+	return briefStyle + datColor + "^" + getHourIcon(hour) + " " + dateTime
 }
 
 func getHourIcon(hour int) string {
